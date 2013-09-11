@@ -11,6 +11,7 @@ The program works internally by splitting the message on numbers, and storing th
 resulting array in a set of tuples.  
 The split string serves to mark positions where numbers existed.  
 If the non-numeric fragments of strings match in count and value, then the strings are considered equal.
+
 """
 import sys
 import re
@@ -21,21 +22,21 @@ class SyslogSet():
     reference_objs = Set()
 
     # public
-    def AddLine(self,line):
+    def add_line(self,line):
         array = self.tokenize(line) 
         self.reference_objs.add(tuple(array))
 
-    def LineExists(self,line):
+    def line_exists(self,line):
         array = self.tokenize(line)
         return (tuple(array) in self.reference_objs)
 
     # helpers
     def tokenize(self,line):
-        body = self.stripdate(line)
+        body = self.strip_date(line)
         tokens = self.split(body)
         return tokens
 
-    def stripdate(self,line):
+    def strip_date(self,line):
         pattern = re.compile("^[a-zA-Z]{3}\s+?\d\d?\s\d\d:\d\d:\d\d\s+?(?P<body>.*)$")
         m = pattern.search(line)
         if m and m.group('body'):
@@ -54,11 +55,11 @@ class TestSyslogSet(unittest.TestCase):
 
     def test_datehandling(self):
         # test our regex by providing interesting date formats
-        self.assertEqual(self.sc.stripdate("Sep 10 07:55:18 two digit day"), "two digit day")
-        self.assertEqual(self.sc.stripdate("Sep  9 08:17:10 one digit day"), "one digit day")
+        self.assertEqual(self.sc.strip_date("Sep 10 07:55:18 two digit day"), "two digit day")
+        self.assertEqual(self.sc.strip_date("Sep  9 08:17:10 one digit day"), "one digit day")
         # a broken date
         with self.assertRaisesRegexp(Exception, "invalid syslog/date format"):
-            self.sc.stripdate("this is not a date")
+            self.sc.strip_date("this is not a date")
 
     def test_split(self):
         self.assertEqual(self.sc.split("varying size equal 1"), self.sc.split("varying size equal 2000"))
@@ -72,11 +73,11 @@ class TestSyslogSet(unittest.TestCase):
         self.assertEqual(self.sc.tokenize(self.log), ['ubuntu ntpd[', ']: ', '.', '.', '.', ' interface ', '.', '.', '.', ' -> (none)'])
 
     def test_mapping(self):
-        self.assertFalse(self.sc.LineExists(self.log))
-        self.sc.AddLine(self.log)
+        self.assertFalse(self.sc.line_exists(self.log))
+        self.sc.add_line(self.log)
         self.assertEqual(len(self.sc.reference_objs),1)
-        self.assertTrue(self.sc.LineExists(self.log))
-        self.sc.AddLine(self.log)
+        self.assertTrue(self.sc.line_exists(self.log))
+        self.sc.add_line(self.log)
         self.assertEqual(len(self.sc.reference_objs),1)
 
 
@@ -94,10 +95,10 @@ def main():
     syslogs = SyslogSet()
 
     for logline in file2:
-        syslogs.AddLine(logline)
+        syslogs.add_line(logline)
 
     for logline in file1:
-        if not syslogs.LineExists(logline):
+        if not syslogs.line_exists(logline):
             print logline.rstrip()
 
 if __name__ == "__main__":
